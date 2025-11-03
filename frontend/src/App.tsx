@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { loadAMap } from './lib/amap';
 import { Link, Route, Routes } from 'react-router-dom';
 import PlannerPage from './pages/PlannerPage';
+import BudgetPage from './pages/BudgetPage';
 
 function MapView() {
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -43,12 +44,14 @@ export default function App() {
         <nav>
           <Link to="/">地图</Link>
           <Link to="/planner">规划</Link>
+          <Link to="/budget">预算</Link>
         </nav>
       </header>
       <main>
         <Routes>
           <Route path="/" element={<MapView />} />
           <Route path="/planner" element={<PlannerPage />} />
+          <Route path="/budget" element={<BudgetPage />} />
         </Routes>
       </main>
     </div>
