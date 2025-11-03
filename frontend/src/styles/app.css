@@ -1,0 +1,14 @@
+:root {
+  --bg: #0b1020;
+  --panel: #131a2a;
+  --text: #e7edf7;
+  --accent: #4ea2ff;
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+.header { display: flex; gap: 12px; padding: 12px; background: var(--panel); }
+.header a { color: var(--text); text-decoration: none; }
+.map-layout { display: grid; grid-template-columns: 1fr 360px; height: calc(100% - 56px); }
+.map { width: 100%; height: 100%; }
+.panel { background: var(--panel); color: var(--text); padding: 16px; overflow: auto; }
+.error { color: #ff6b6b; }
