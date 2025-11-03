@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useSpeechRecognition } from '../hooks/useSpeech';
 import { addExpense, loadExpenses, removeExpense } from '../lib/budgetStore';
+import { saveExpensesToCloud } from '../lib/db';
+import { useAuth } from '../context/auth';
 import type { Expense, BudgetAnalysis } from '../types/budget';
 import { postBudgetAnalyze } from '../lib/api';
 
@@ -12,6 +14,7 @@ function parseAmount(text: string): number | undefined {
 
 export default function BudgetPage() {
   const { listening, transcript, start, stop } = useSpeechRecognition();
+  const { user } = useAuth();
   const [items, setItems] = useState<Expense[]>(() => loadExpenses());
   const [form, setForm] = useState<{ description: string; amount?: number; category: string; date: string }>(() => ({
     description: '',
@@ -22,6 +25,7 @@ export default function BudgetPage() {
   const [cap, setCap] = useState<number | ''>('');
   const [analysis, setAnalysis] = useState<BudgetAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const total = useMemo(() => items.reduce((s, i) => s + i.amount, 0), [items]);
 
   const applySpeechToForm = () => {
@@ -52,6 +56,16 @@ export default function BudgetPage() {
     }
   };
 
+  const syncToCloud = async () => {
+    try {
+      setInfo(null);
+      await saveExpensesToCloud(items, 'CNY', typeof cap === 'number' ? cap : undefined);
+      setInfo('已同步到云端');
+    } catch (e: any) {
+      setError(e.message || String(e));
+    }
+  };
+
   return (
     <div className="panel">
       <h2>费用预算与管理</h2>
@@ -63,6 +77,11 @@ export default function BudgetPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={listening ? stop : start}>{listening ? '停止语音' : '开始语音'}</button>
           <button type="button" onClick={applySpeechToForm} disabled={!transcript}>将识别文本填入表单</button>
+          {user ? (
+            <button type="button" onClick={syncToCloud} disabled={!items.length}>同步到云端</button>
+          ) : (
+            <span style={{ alignSelf: 'center' }}>登录后可同步到云端</span>
+          )}
         </div>
         <label>
           金额（元）
@@ -139,6 +158,7 @@ export default function BudgetPage() {
           </ul>
         </div>
       )}
+      {info && <p>{info}</p>}
     </div>
   );
 }

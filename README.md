@@ -1,35 +1,34 @@
 # AiTravelPlanner
+使用 AI 生成旅行计划，并支持用户管理与云端同步
 
-一个 Web 版的 AI 旅行规划师项目的基础骨架。当前仅搭建了目录结构，后续将根据具体需求逐步完善前后端能力与 CI/CD。
+## 功能概览
+- 智能行程规划：输入目的地、日期、预算、偏好与同行人数，生成行程与预算。
+- 费用预算与管理：语音/文本记账、AI 预算分析与建议。
+- 用户管理：Supabase 邮箱密码登录/注册、会话管理。
+- 云端数据同步：行程与开销保存到云端，跨设备查看与修改。
 
-## 目录结构
+## 本地开发
+1. 安装依赖（需 Node.js 18+）
+   - 前端：`cd frontend && npm i && npm run dev`
+   - 后端：`cd backend && npm i && npm run dev`
+2. 环境变量（前端 `.env`）
+   - `VITE_API_BASE`：后端地址，如 `http://localhost:3000`
+   - `VITE_SUPABASE_URL`：Supabase 项目 URL
+   - `VITE_SUPABASE_ANON_KEY`：Supabase 匿名 Key
 
-- `frontend/` 前端应用（Web UI）
-  - `public/` 静态资源
-  - `src/components/` 组件
-  - `src/pages/` 页面
-  - `src/hooks/` 自定义 Hooks
-  - `src/styles/` 样式
-  - `src/utils/` 工具函数
-  - `src/assets/` 资源文件
-- `backend/` 后端服务（API）
-  - `src/routes/` 路由定义
-  - `src/controllers/` 控制器
-  - `src/services/` 业务服务
-  - `src/middleware/` 中间件
-  - `src/config/` 配置
-  - `src/models/` 数据模型
-  - `src/utils/` 工具函数
-- `docs/` 项目文档
-- `tests/` 测试用例
-- `scripts/` 自动化脚本
+## Supabase 配置
+1. 创建项目并获取 `URL` 与 `ANON KEY` 填入前端 `.env`
+2. 执行 SQL（Supabase 控制台 SQL Editor）建表与 RLS：`docs/supabase/schema.sql`
+3. 前端自动使用当前登录用户 `user_id` 存储 `plans` 与 `expenses` 数据。
 
-所有空目录通过 `.gitkeep` 文件被跟踪。
+## 关键页面
+- `PlannerPage`：行程生成与展示（登录后可保存到云端）
+- `BudgetPage`：语音记账与 AI 分析（登录后可同步到云端）
+- `AuthPage`：邮箱密码注册/登录、退出登录
 
-## 下一步
+## 依赖
+- 前端：React、React Router、@supabase/supabase-js
+- 后端：Express、Zod
 
-- 前端：选择技术栈（如 React + Vite + TS）并初始化工程
-- 后端：选择技术栈（如 Node.js + Express + TS）并初始化工程
-- DevOps：基础 CI 工作流与代码质量工具
-
-使用ai生成旅行计划
+## 注意
+- 预览需启动前端开发服务器；本环境若无 Node.js 将无法浏览 UI。

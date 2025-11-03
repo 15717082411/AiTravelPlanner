@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useSpeechRecognition } from '../hooks/useSpeech';
 import { postPlan } from '../lib/api';
+import { savePlanToCloud } from '../lib/db';
+import { useAuth } from '../context/auth';
 import type { PlanInput, PlanResponse } from '../types/plan';
 import { Itinerary } from '../components/Itinerary';
 
 export default function PlannerPage() {
   const { listening, transcript, start, stop } = useSpeechRecognition();
+  const { user } = useAuth();
   const [form, setForm] = useState<PlanInput>({
     destination: '',
     startDate: '',
@@ -17,6 +20,7 @@ export default function PlannerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PlanResponse | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +30,7 @@ export default function PlannerPage() {
     try {
       const res = await postPlan(form);
       setData(res);
+      setInfo(null);
     } catch (err: any) {
       setError(err.message || String(err));
     } finally {
@@ -35,6 +40,17 @@ export default function PlannerPage() {
 
   const applyTranscriptToDestination = () => {
     if (transcript) setForm((f) => ({ ...f, destination: transcript }));
+  };
+
+  const handleSavePlan = async () => {
+    if (!data) return;
+    try {
+      setInfo(null);
+      await savePlanToCloud(data, form);
+      setInfo('已保存到云端');
+    } catch (e: any) {
+      setError(e.message || String(e));
+    }
   };
 
   return (
@@ -91,8 +107,14 @@ export default function PlannerPage() {
       </form>
       {error && <p className="error">{error}</p>}
       {data && (
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 16, display: 'grid', gap: 8 }}>
           <Itinerary data={data} />
+          {user ? (
+            <button onClick={handleSavePlan}>保存到云端</button>
+          ) : (
+            <p>登录后可保存到云端</p>
+          )}
+          {info && <p>{info}</p>}
         </div>
       )}
     </div>
