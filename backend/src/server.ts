@@ -1,6 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { z } from 'zod';
+import DeepSeekService from './services/deepseek';
 
 const app = express();
 app.use(cors());
@@ -18,38 +20,50 @@ const PlanInput = z.object({
   currency: z.string().default('CNY'),
 });
 
-app.post('/api/plan', (req, res) => {
+app.post('/api/plan', async (req, res) => {
   const parse = PlanInput.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: parse.error.flatten() });
+  
   const input = parse.data;
-  const days = 3;
-  const itinerary = Array.from({ length: days }, (_, i) => ({
-    date: input.startDate || `Day ${i + 1}`,
-    activities: [
-      { time: '09:00', name: `${input.destination} 经典景点`, type: 'sightseeing' },
-      { time: '12:00', name: '特色餐馆', type: 'food' },
-      { time: '15:00', name: '自由活动', type: 'free' },
-    ],
-  }));
-  const base = input.budget ?? 1000;
-  const total = Math.round(base * (1 + (input.partySize - 1) * 0.6));
-  const resp = {
-    destination: input.destination,
-    startDate: input.startDate || '',
-    endDate: input.endDate || '',
-    partySize: input.partySize,
-    preferences: input.preferences,
-    currency: input.currency,
-    itinerary,
-    budget: {
-      totalEstimate: total,
-      transportation: Math.round(total * 0.3),
-      accommodation: Math.round(total * 0.3),
-      food: Math.round(total * 0.25),
-      attractions: Math.round(total * 0.15),
-    },
-  };
-  res.json(resp);
+  
+  try {
+    // 尝试使用 DeepSeek AI 生成行程
+    const deepSeekService = new DeepSeekService();
+    const plan = await deepSeekService.generateTravelPlan(input);
+    res.json(plan);
+  } catch (error) {
+    console.error('DeepSeek 服务初始化失败，使用备用方案:', error);
+    
+    // 如果 DeepSeek 服务不可用，使用原有的静态逻辑作为备用
+    const days = 3;
+    const itinerary = Array.from({ length: days }, (_, i) => ({
+      date: input.startDate || `第${i + 1}天`,
+      activities: [
+        { time: '09:00', name: `${input.destination} 经典景点`, type: 'sightseeing' },
+        { time: '12:00', name: '特色餐馆', type: 'food' },
+        { time: '15:00', name: '自由活动', type: 'free' },
+      ],
+    }));
+    const base = input.budget ?? 1000;
+    const total = Math.round(base * (1 + (input.partySize - 1) * 0.6));
+    const resp = {
+      destination: input.destination,
+      startDate: input.startDate || '',
+      endDate: input.endDate || '',
+      partySize: input.partySize,
+      preferences: input.preferences,
+      currency: input.currency,
+      itinerary,
+      budget: {
+        totalEstimate: total,
+        transportation: Math.round(total * 0.3),
+        accommodation: Math.round(total * 0.3),
+        food: Math.round(total * 0.25),
+        attractions: Math.round(total * 0.15),
+      },
+    };
+    res.json(resp);
+  }
 });
 
 const Expense = z.object({ id: z.string().optional(), description: z.string(), category: z.string(), amount: z.number().nonnegative(), date: z.string() });
