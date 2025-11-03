@@ -16,6 +16,7 @@ const PlanInput = z.object({
   startDate: z.string(),
   endDate: z.string(),
   budget: z.number().min(0).optional(),
+  partySize: z.number().int().min(1).default(1),
   preferences: z.array(z.string()).optional(),
 });
 
@@ -25,19 +26,17 @@ app.post('/api/plan', (req, res) => {
     return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
   }
 
-  const { destination, startDate, endDate, budget } = parsed.data;
-  // TODO: 调用所选的大语言模型 API，生成行程与预算估计。
-  // 当前返回占位数据，便于前后端联调。
+  const { destination, startDate, endDate, budget, partySize, preferences } = parsed.data;
   const itinerary = [
     { day: 1, title: `${destination} 市区游`, activities: ['博物馆', '老城区步行', '本地餐馆'] },
     { day: 2, title: `${destination} 周边自然景观`, activities: ['国家公园徒步', '观景台拍照'] },
   ];
   const budgetEst = {
     currency: 'CNY',
-    estimate: budget ?? 2000,
-    breakdown: { accommodation: 800, transport: 400, food: 300, activities: 500 },
+    estimate: (budget ?? 2000) * partySize,
+    breakdown: { accommodation: 800 * partySize, transport: 400 * partySize, food: 300 * partySize, activities: 500 * partySize },
   };
-  res.json({ destination, startDate, endDate, itinerary, budget: budgetEst });
+  res.json({ destination, startDate, endDate, partySize, preferences: preferences ?? [], itinerary, budget: budgetEst });
 });
 
 const port = Number(process.env.PORT || 3000);
