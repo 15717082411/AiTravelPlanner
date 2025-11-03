@@ -39,6 +39,59 @@ app.post('/api/plan', (req, res) => {
   res.json({ destination, startDate, endDate, partySize, preferences: preferences ?? [], itinerary, budget: budgetEst });
 });
 
+// 费用预算分析
+const Expense = z.object({
+  id: z.string().optional(),
+  description: z.string(),
+  category: z.string(),
+  amount: z.number().min(0),
+  date: z.string(),
+});
+const BudgetAnalyzeInput = z.object({
+  expenses: z.array(Expense),
+  budgetCap: z.number().min(0).optional(),
+});
+
+app.post('/api/budget/analyze', (req, res) => {
+  const parsed = BudgetAnalyzeInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
+  }
+  const { expenses, budgetCap } = parsed.data;
+  const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const byCategory: Record<string, number> = {};
+  for (const e of expenses) {
+    byCategory[e.category] = (byCategory[e.category] ?? 0) + e.amount;
+  }
+  const breakdown = Object.entries(byCategory)
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount);
+  const remaining = budgetCap != null ? Math.max(0, budgetCap - totalSpent) : undefined;
+
+  // 简单建议逻辑（占位，可替换为 LLM）
+  const suggestions: string[] = [];
+  if (budgetCap != null) {
+    if (totalSpent > budgetCap) {
+      const top = breakdown[0];
+      if (top) suggestions.push(`当前超支 ${(totalSpent - budgetCap).toFixed(0)} 元，考虑减少「${top.category}」支出。`);
+      suggestions.push('优先预订可退款项目、查看交通/住宿的优惠与组合票。');
+    } else {
+      suggestions.push(`剩余预算约 ${remaining?.toFixed(0)} 元，可增加体验或升级餐饮/住宿。`);
+    }
+  } else {
+    suggestions.push('未设置预算上限，建议设定目标以便更好地控制开销。');
+  }
+
+  res.json({
+    currency: 'CNY',
+    totalSpent,
+    budgetCap: budgetCap ?? null,
+    remaining: remaining ?? null,
+    breakdown,
+    suggestions,
+  });
+});
+
 const port = Number(process.env.PORT || 3000);
 app.listen(port, () => {
   // eslint-disable-next-line no-console
