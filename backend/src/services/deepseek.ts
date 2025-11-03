@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { getKeys } from '../config/keys';
 
 interface PlanRequest {
   destination: string;
@@ -45,7 +46,7 @@ class DeepSeekService {
   private client: OpenAI;
 
   constructor() {
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const { deepseekApiKey: apiKey } = getKeys();
     if (!apiKey) {
       throw new Error('DEEPSEEK_API_KEY environment variable is required');
     }
@@ -56,6 +57,137 @@ class DeepSeekService {
     });
   }
 
+  // 从自由文本中抽取结构化规划字段（智能填充用）
+  async extractPlanFields(text: string, currency: string = 'CNY'): Promise<{
+    destination?: string;
+    startDate?: string;
+    endDate?: string;
+    partySize?: number;
+    preferences?: string[];
+    budget?: { total?: number; perPerson?: number };
+  }> {
+    try {
+      const response = await this.client.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个信息抽取助手。请从用户的中文或英文自由文本中抽取旅行规划字段，并严格返回 JSON。日期用 ISO 格式 YYYY-MM-DD。预算币种默认使用传入的 currency，不做汇率换算。'
+          },
+          {
+            role: 'user',
+            content: `从以下文本中抽取：destination（目的地，字符串），startDate（开始日期，YYYY-MM-DD，可空），endDate（结束日期，YYYY-MM-DD，可空），partySize（人数，整数，可空），preferences（偏好字符串数组，可空），budget（对象，包含 total 与 perPerson，单位 ${currency}，可空）。只返回 JSON：\n\n${text}`
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 800,
+        response_format: { type: 'json_object' } as any,
+      });
+
+      const content = response.choices[0]?.message?.content || '{}';
+      const data = this.safeParseJson(content);
+      // 规范化与容错
+      const dest = typeof data.destination === 'string' ? data.destination.trim() : undefined;
+      const start = this.normalizeDate(data.startDate);
+      const end = this.normalizeDate(data.endDate);
+      const party = this.toInt(data.partySize);
+      const prefs = Array.isArray(data.preferences) ? data.preferences.map((x: any) => String(x)).filter(Boolean) : undefined;
+      const budget = data.budget || {};
+      const total = this.toNumber(budget.total);
+      const perPerson = this.toNumber(budget.perPerson);
+      return { destination: dest, startDate: start, endDate: end, partySize: party, preferences: prefs, budget: { total, perPerson } };
+    } catch (e) {
+      console.error('DeepSeek extractPlanFields error:', e);
+      // 失败时返回空对象，让前端或调用方走本地规则兜底
+      return {};
+    }
+  }
+
+  // 从自由文本中抽取预算页面所需字段（描述、金额、分类、日期）
+  async extractExpenseFields(text: string, currency: string = 'CNY'): Promise<{
+    description?: string;
+    amount?: number;
+    category?: string;
+    date?: string;
+  }> {
+    try {
+      const response = await this.client.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个信息抽取助手。请从用户的中文或英文自由文本中抽取旅行开销记录字段，并严格返回 JSON。日期用 ISO 格式 YYYY-MM-DD。分类请归一到：餐饮、交通、住宿、门票、购物、其他。金额单位默认使用传入的 currency，不做汇率换算。'
+          },
+          {
+            role: 'user',
+            content: `从以下文本中抽取：description（描述，字符串），amount（金额，数字，可空），category（分类，餐饮/交通/住宿/门票/购物/其他，可空），date（日期，YYYY-MM-DD，可空）。\n文本：${text}\n币种：${currency}`
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 400,
+        response_format: { type: 'json_object' } as any,
+      });
+
+      const content = response.choices[0]?.message?.content || '{}';
+      const data = this.safeParseJson(content);
+      const description = typeof data.description === 'string' ? data.description.trim() : undefined;
+      const amount = this.toNumber(data.amount);
+      let category = typeof data.category === 'string' ? data.category.trim() : undefined;
+      const date = this.normalizeDate(data.date);
+      // 规范化分类到预设集合
+      const MAP: Record<string, string> = {
+        '餐饮': '餐饮', '饮食': '餐饮', '美食': '餐饮', 'food': '餐饮',
+        '交通': '交通', '出行': '交通', 'transportation': '交通',
+        '住宿': '住宿', 'hotel': '住宿', '民宿': '住宿', 'accommodation': '住宿',
+        '门票': '门票', '景点': '门票', '票务': '门票', 'attractions': '门票', 'ticket': '门票',
+        '购物': '购物', 'shopping': '购物', '买': '购物',
+        '其他': '其他', 'misc': '其他', '其它': '其他'
+      };
+      if (category) {
+        const low = category.toLowerCase();
+        // 找到 MAP 中包含该词的键
+        const matched = Object.keys(MAP).find(k => low.includes(k.toLowerCase()));
+        category = matched ? MAP[matched] : (['餐饮','交通','住宿','门票','购物','其他'].includes(category) ? category : undefined);
+      }
+      return { description, amount, category, date };
+    } catch (e) {
+      console.error('DeepSeek extractExpenseFields error:', e);
+      return {};
+    }
+  }
+
+  private normalizeDate(d: any): string | undefined {
+    if (!d) return undefined;
+    try {
+      const s = String(d).trim();
+      // 允许 YYYY/MM/DD 或 YYYY年MM月DD日，规范为 YYYY-MM-DD
+      const m1 = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+      if (m1) return `${m1[1]}-${String(Number(m1[2])).padStart(2,'0')}-${String(Number(m1[3])).padStart(2,'0')}`;
+      const m2 = s.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日?$/);
+      if (m2) return `${m2[1]}-${String(Number(m2[2])).padStart(2,'0')}-${String(Number(m2[3])).padStart(2,'0')}`;
+      // 如果是合法日期字符串
+      const dt = new Date(s);
+      if (!isNaN(dt.getTime())) {
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth()+1).padStart(2,'0');
+        const d2 = String(dt.getDate()).padStart(2,'0');
+        return `${y}-${m}-${d2}`;
+      }
+    } catch {}
+    return undefined;
+  }
+
+  private toInt(n: any): number | undefined {
+    if (n == null) return undefined;
+    const v = Number(n);
+    return Number.isFinite(v) ? Math.round(v) : undefined;
+  }
+
+  private toNumber(n: any): number | undefined {
+    if (n == null) return undefined;
+    const v = Number(n);
+    return Number.isFinite(v) ? Math.round(v) : undefined;
+  }
   async generateTravelPlan(request: PlanRequest): Promise<TravelPlan> {
     const prompt = this.buildPrompt(request);
     
