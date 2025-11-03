@@ -12,6 +12,19 @@ import MapView from './components/MapView';
 export default function App() {
   const { user, loading } = useAuth();
   const [theme, setTheme] = useState<string>(() => {
+    // 优先读取设置页保存的 userSettings.theme
+    try {
+      const raw = localStorage.getItem('userSettings');
+      if (raw) {
+        const obj = JSON.parse(raw);
+        const mode = obj?.theme as 'system' | 'light' | 'dark' | undefined;
+        if (mode === 'light') return 'light';
+        if (mode === 'dark') return 'dark';
+        // system 或未设置：跟随系统
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? 'dark' : 'light';
+      }
+    } catch {}
     const saved = localStorage.getItem('theme');
     if (saved) return saved;
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -24,8 +37,20 @@ export default function App() {
     else root.removeAttribute('data-theme');
     localStorage.setItem('theme', theme);
   }, [theme]);
-
-  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => {
+    setTheme((t) => {
+      const next = t === 'dark' ? 'light' : 'dark';
+      // 同步到 userSettings 以覆盖“跟随系统”模式
+      try {
+        const raw = localStorage.getItem('userSettings');
+        const obj = raw ? JSON.parse(raw) : {};
+        obj.theme = next;
+        localStorage.setItem('userSettings', JSON.stringify(obj));
+      } catch {}
+      localStorage.setItem('theme', next);
+      return next;
+    });
+  };
   return (
     <div>
       <header className="header">
