@@ -3,7 +3,12 @@ import type { PlanResponse } from '../types/plan';
 export function Itinerary({ data }: { data: PlanResponse }) {
   return (
     <div className="panel">
-      <h3>行程概览</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h3>行程概览</h3>
+        {data.source && (
+          <span className={`badge ${data.source === 'deepseek' ? 'badge-ai' : ''}`}>{data.source === 'deepseek' ? 'AI · DeepSeek' : 'AI · Fallback'}</span>
+        )}
+      </div>
       <p>
         目的地：{data.destination}；日期：{data.startDate} - {data.endDate}；人数：{data.partySize}
       </p>

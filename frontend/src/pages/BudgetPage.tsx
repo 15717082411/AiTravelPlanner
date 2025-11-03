@@ -58,15 +58,15 @@ export default function BudgetPage() {
   return (
     <div className="panel">
       <h2>费用预算与管理</h2>
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div className="form-grid">
         <label>
           描述
           <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="如：午餐、门票" />
         </label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" onClick={listening ? stop : start}>{listening ? '停止语音' : '开始语音'}</button>
-          <button type="button" onClick={applySpeechToForm} disabled={!transcript}>将识别文本填入表单</button>
-          {user ? (<button type="button" onClick={syncCloud} disabled={!items.length}>同步到云端</button>) : (<span style={{ alignSelf: 'center' }}>登录后可同步到云端</span>)}
+        <div className="form-actions">
+          <button className="btn" type="button" onClick={listening ? stop : start}>{listening ? '停止语音' : '开始语音'}</button>
+          <button className="btn btn-outline" type="button" onClick={applySpeechToForm} disabled={!transcript}>将识别文本填入表单</button>
+          {user ? (<button className="btn" type="button" onClick={syncCloud} disabled={!items.length}>同步到云端</button>) : (<span style={{ alignSelf: 'center' }}>登录后可同步到云端</span>)}
         </div>
         <label>
           金额（元）
@@ -87,7 +87,7 @@ export default function BudgetPage() {
           日期
           <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
         </label>
-        <button type="button" onClick={add}>添加开销</button>
+        <button className="btn btn-primary" type="button" onClick={add}>添加开销</button>
       </div>
 
       <div style={{ marginTop: 16 }}>
@@ -96,7 +96,7 @@ export default function BudgetPage() {
           {items.map((i) => (
             <li key={i.id}>
               {i.date} [{i.category}] {i.description} - {i.amount} 元
-              <button style={{ marginLeft: 8 }} onClick={() => setItems(removeExpense(i.id))}>删除</button>
+              <button className="btn btn-danger" style={{ marginLeft: 8 }} onClick={() => setItems(removeExpense(i.id))}>删除</button>
             </li>
           ))}
         </ul>
@@ -105,7 +105,7 @@ export default function BudgetPage() {
       <div style={{ marginTop: 16 }}>
         <h3>预算上限</h3>
         <input type="number" min={0} value={cap} onChange={(e) => setCap(e.target.value ? Number(e.target.value) : '')} placeholder="例如：10000" />
-        <button style={{ marginLeft: 8 }} onClick={analyze}>AI 分析预算</button>
+        <button className="btn btn-outline" style={{ marginLeft: 8 }} onClick={analyze}>AI 分析预算</button>
       </div>
 
       {error && <p className="error">{error}</p>}

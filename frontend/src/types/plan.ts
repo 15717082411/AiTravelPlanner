@@ -26,4 +26,5 @@ export type PlanResponse = {
     food?: number;
     attractions?: number;
   };
+  source?: 'deepseek' | 'fallback';
 };
