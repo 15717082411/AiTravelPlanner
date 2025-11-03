@@ -1,0 +1,9 @@
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Microsoft Yahei", sans-serif; margin: 0; }
+.header { padding: 12px; border-bottom: 1px solid #eee; }
+.header nav { display: flex; gap: 12px; }
+.map-layout { display: grid; grid-template-columns: 1fr 320px; height: calc(100vh - 56px); }
+.map { width: 100%; height: 100%; }
+.panel { padding: 16px; }
+.error { color: #b00020; }
+button { padding: 6px 12px; }
+input, select { padding: 6px; }

@@ -4,7 +4,8 @@ export type PlanInput = {
   endDate: string;
   budget?: number;
   partySize: number;
-  preferences?: string[];
+  preferences: string[];
+  currency?: string;
 };
 
 export type PlanResponse = {
@@ -13,6 +14,16 @@ export type PlanResponse = {
   endDate: string;
   partySize: number;
   preferences: string[];
-  itinerary: { day: number; title: string; activities: string[] }[];
-  budget: { currency: string; estimate: number; breakdown: Record<string, number> };
+  currency: string;
+  itinerary: Array<{
+    date: string;
+    activities: Array<{ time: string; name: string; type: string }>;
+  }>;
+  budget: {
+    totalEstimate: number;
+    transportation?: number;
+    accommodation?: number;
+    food?: number;
+    attractions?: number;
+  };
 };

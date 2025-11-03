@@ -1,13 +1,12 @@
 import type { Expense } from '../types/budget';
 
-const KEY = 'ai-travel-budget-expenses';
+const KEY = 'ai-travel-planner-expenses';
 
 export function loadExpenses(): Expense[] {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
+    const arr = raw ? (JSON.parse(raw) as Expense[]) : [];
+    return arr;
   } catch {
     return [];
   }
@@ -17,16 +16,16 @@ export function saveExpenses(items: Expense[]) {
   localStorage.setItem(KEY, JSON.stringify(items));
 }
 
-export function addExpense(item: Omit<Expense, 'id'>): Expense[] {
+export function addExpense(e: Omit<Expense, 'id'>) {
   const items = loadExpenses();
-  const exp: Expense = { id: crypto.randomUUID(), ...item };
-  const next = [exp, ...items];
+  const next = [{ id: crypto.randomUUID(), ...e }, ...items];
   saveExpenses(next);
   return next;
 }
 
-export function removeExpense(id: string): Expense[] {
-  const items = loadExpenses().filter((e) => e.id !== id);
-  saveExpenses(items);
-  return items;
+export function removeExpense(id: string) {
+  const items = loadExpenses();
+  const next = items.filter((i) => i.id !== id);
+  saveExpenses(next);
+  return next;
 }

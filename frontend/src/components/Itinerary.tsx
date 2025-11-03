@@ -2,29 +2,31 @@ import type { PlanResponse } from '../types/plan';
 
 export function Itinerary({ data }: { data: PlanResponse }) {
   return (
-    <div>
-      <h3>行程与预算</h3>
+    <div className="panel">
+      <h3>行程概览</h3>
       <p>
-        目的地：{data.destination}，日期：{data.startDate} - {data.endDate}，人数：{data.partySize}
+        目的地：{data.destination}；日期：{data.startDate} - {data.endDate}；人数：{data.partySize}
       </p>
-      <p>偏好：{data.preferences.join('、') || '无'}</p>
+      {!!data.preferences?.length && <p>偏好：{data.preferences.join('、')}</p>}
+      <h4>每日安排</h4>
       <ul>
-        {data.itinerary.map((d) => (
-          <li key={d.day}>
-            <strong>第 {d.day} 天：</strong> {d.title}（{d.activities.join('，')}）
+        {data.itinerary.map((day) => (
+          <li key={day.date}>
+            <strong>{day.date}</strong>
+            <ul>
+              {day.activities.map((a, idx) => (
+                <li key={idx}>{a.time} - {a.name}（{a.type}）</li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>
-      <div>
-        <strong>预算估计：</strong> {data.budget.estimate} {data.budget.currency}
-        <ul>
-          {Object.entries(data.budget.breakdown).map(([k, v]) => (
-            <li key={k}>
-              {k}：{v} {data.budget.currency}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <h4>预算拆分（{data.currency}）</h4>
+      <ul>
+        {Object.entries(data.budget).map(([k, v]) => (
+          <li key={k}>{k}: {v as number}</li>
+        ))}
+      </ul>
     </div>
   );
 }

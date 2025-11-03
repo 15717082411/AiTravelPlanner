@@ -5,8 +5,8 @@ import App from './App';
 import './styles/app.css';
 import { AuthProvider } from './context/auth';
 
-const root = document.getElementById('root')!;
-createRoot(root).render(
+const root = createRoot(document.getElementById('root')!);
+root.render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>

@@ -3,14 +3,14 @@ export type Expense = {
   description: string;
   category: string;
   amount: number;
-  date: string; // ISO
+  date: string;
 };
 
 export type BudgetAnalysis = {
   currency: string;
   totalSpent: number;
-  budgetCap: number | null;
-  remaining: number | null;
-  breakdown: { category: string; amount: number }[];
+  budgetCap?: number;
+  remaining?: number;
+  breakdown: Array<{ category: string; amount: number }>;
   suggestions: string[];
 };

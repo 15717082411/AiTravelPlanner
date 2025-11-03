@@ -1,5 +1,7 @@
 -- Supabase SQL schema for AiTravelPlanner
 
+create extension if not exists "uuid-ossp";
+
 create table if not exists public.plans (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid references auth.users(id) on delete cascade,

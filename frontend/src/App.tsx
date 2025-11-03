@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { loadAMap } from './lib/amap';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes, Navigate } from 'react-router-dom';
 import PlannerPage from './pages/PlannerPage';
 import BudgetPage from './pages/BudgetPage';
 import AuthPage from './pages/AuthPage';
 import { useAuth } from './context/auth';
+import { loadAMap } from './lib/amap';
 
 function MapView() {
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -15,16 +15,10 @@ function MapView() {
     loadAMap()
       .then((AMap) => {
         if (!mapRef.current) return;
-        map = new AMap.Map(mapRef.current, {
-          viewMode: '2D',
-          zoom: 11,
-        });
+        map = new AMap.Map(mapRef.current, { viewMode: '2D', zoom: 11 });
       })
       .catch((e) => setError(e.message || String(e)));
-    return () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-      map && map.destroy && map.destroy();
-    };
+    return () => { map && map.destroy && map.destroy(); };
   }, []);
 
   return (
@@ -40,22 +34,62 @@ function MapView() {
 }
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   return (
     <div>
       <header className="header">
         <nav>
-          <Link to="/">地图</Link>
-          <Link to="/planner">规划</Link>
-          <Link to="/budget">预算</Link>
-          <Link to="/auth">{user ? '我的账户' : '登录'}</Link>
+          {user ? (
+            <>
+              <Link to="/map">地图</Link>
+              <Link to="/planner">规划</Link>
+              <Link to="/budget">预算</Link>
+              <Link to="/auth">我的账户</Link>
+            </>
+          ) : (
+            <Link to="/">登录</Link>
+          )}
         </nav>
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<MapView />} />
-          <Route path="/planner" element={<PlannerPage />} />
-          <Route path="/budget" element={<BudgetPage />} />
+          <Route path="/" element={<AuthPage />} />
+          <Route
+            path="/map"
+            element={
+              loading ? (
+                <div style={{ padding: 16 }}>正在加载登录状态…</div>
+              ) : user ? (
+                <MapView />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/planner"
+            element={
+              loading ? (
+                <div style={{ padding: 16 }}>正在加载登录状态…</div>
+              ) : user ? (
+                <PlannerPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/budget"
+            element={
+              loading ? (
+                <div style={{ padding: 16 }}>正在加载登录状态…</div>
+              ) : user ? (
+                <BudgetPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
           <Route path="/auth" element={<AuthPage />} />
         </Routes>
       </main>

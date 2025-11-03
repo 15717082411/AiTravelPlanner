@@ -1,22 +1,15 @@
 import { useState } from 'react';
 import { useSpeechRecognition } from '../hooks/useSpeech';
 import { postPlan } from '../lib/api';
-import { savePlanToCloud } from '../lib/db';
-import { useAuth } from '../context/auth';
 import type { PlanInput, PlanResponse } from '../types/plan';
 import { Itinerary } from '../components/Itinerary';
+import { savePlanToCloud } from '../lib/db';
+import { useAuth } from '../context/auth';
 
 export default function PlannerPage() {
-  const { listening, transcript, start, stop } = useSpeechRecognition();
+  const { listening, transcript, start, stop, error: speechError } = useSpeechRecognition();
   const { user } = useAuth();
-  const [form, setForm] = useState<PlanInput>({
-    destination: '',
-    startDate: '',
-    endDate: '',
-    budget: undefined,
-    partySize: 1,
-    preferences: [],
-  });
+  const [form, setForm] = useState<PlanInput>({ destination: '', startDate: '', endDate: '', budget: undefined, partySize: 1, preferences: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PlanResponse | null>(null);
@@ -24,13 +17,10 @@ export default function PlannerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setData(null);
+    setLoading(true); setError(null); setData(null); setInfo(null);
     try {
       const res = await postPlan(form);
       setData(res);
-      setInfo(null);
     } catch (err: any) {
       setError(err.message || String(err));
     } finally {
@@ -38,11 +28,9 @@ export default function PlannerPage() {
     }
   };
 
-  const applyTranscriptToDestination = () => {
-    if (transcript) setForm((f) => ({ ...f, destination: transcript }));
-  };
+  const applySpeechToDestination = () => { if (transcript) setForm((f) => ({ ...f, destination: transcript })); };
 
-  const handleSavePlan = async () => {
+  const saveCloud = async () => {
     if (!data) return;
     try {
       setInfo(null);
@@ -59,19 +47,12 @@ export default function PlannerPage() {
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
         <label>
           目的地
-          <input
-            value={form.destination}
-            onChange={(e) => setForm({ ...form, destination: e.target.value })}
-            placeholder="如：日本东京"
-          />
+          <input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder="如：日本东京" />
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" onClick={listening ? stop : start}>
-            {listening ? '停止语音' : '开始语音'}
-          </button>
-          <button type="button" onClick={applyTranscriptToDestination} disabled={!transcript}>
-            将识别文本填入目的地
-          </button>
+          <button type="button" onClick={listening ? stop : start}>{listening ? '停止语音' : '开始语音'}</button>
+          <button type="button" onClick={applySpeechToDestination} disabled={!transcript}>填入识别文本</button>
+          {speechError && <span className="error">{speechError}</span>}
         </div>
         <label>
           开始日期
@@ -83,12 +64,7 @@ export default function PlannerPage() {
         </label>
         <label>
           预算（元）
-          <input
-            type="number"
-            min={0}
-            value={form.budget ?? ''}
-            onChange={(e) => setForm({ ...form, budget: e.target.value ? Number(e.target.value) : undefined })}
-          />
+          <input type="number" min={0} value={form.budget ?? ''} onChange={(e) => setForm({ ...form, budget: e.target.value ? Number(e.target.value) : undefined })} />
         </label>
         <label>
           同行人数
@@ -96,24 +72,15 @@ export default function PlannerPage() {
         </label>
         <label>
           旅行偏好（用逗号分隔）
-          <input
-            placeholder="如：美食, 动漫, 亲子"
-            onChange={(e) => setForm({ ...form, preferences: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
-          />
+          <input placeholder="如：美食, 动漫, 亲子" onChange={(e) => setForm({ ...form, preferences: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })} />
         </label>
-        <button type="submit" disabled={loading}>
-          {loading ? '生成中…' : '生成行程'}
-        </button>
+        <button type="submit" disabled={loading}>{loading ? '生成中…' : '生成行程'}</button>
       </form>
       {error && <p className="error">{error}</p>}
       {data && (
         <div style={{ marginTop: 16, display: 'grid', gap: 8 }}>
           <Itinerary data={data} />
-          {user ? (
-            <button onClick={handleSavePlan}>保存到云端</button>
-          ) : (
-            <p>登录后可保存到云端</p>
-          )}
+          {user ? (<button onClick={saveCloud}>保存到云端</button>) : (<p>登录后可保存到云端</p>)}
           {info && <p>{info}</p>}
         </div>
       )}
