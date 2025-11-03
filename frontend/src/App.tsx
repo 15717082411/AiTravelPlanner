@@ -3,6 +3,9 @@ import { Link, Route, Routes, Navigate } from 'react-router-dom';
 import PlannerPage from './pages/PlannerPage';
 import BudgetPage from './pages/BudgetPage';
 import AuthPage from './pages/AuthPage';
+import SettingsPage from './pages/SettingsPage';
+import PlansPage from './pages/PlansPage';
+import PlanDetailPage from './pages/PlanDetailPage';
 import { useAuth } from './context/auth';
 import MapView from './components/MapView';
 
@@ -33,7 +36,9 @@ export default function App() {
               <>
                 <Link className="nav-link" to="/map">地图</Link>
                 <Link className="nav-link" to="/planner">规划</Link>
+                <Link className="nav-link" to="/plans">行程</Link>
                 <Link className="nav-link" to="/budget">预算</Link>
+                <Link className="nav-link" to="/settings">设置</Link>
                 <Link className="nav-link" to="/auth">我的账户</Link>
               </>
             ) : (
@@ -73,12 +78,48 @@ export default function App() {
             }
           />
           <Route
+            path="/plans"
+            element={
+              loading ? (
+                <div style={{ padding: 16 }}>正在加载登录状态…</div>
+              ) : user ? (
+                <PlansPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/plans/:id"
+            element={
+              loading ? (
+                <div style={{ padding: 16 }}>正在加载登录状态…</div>
+              ) : user ? (
+                <PlanDetailPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
             path="/budget"
             element={
               loading ? (
                 <div style={{ padding: 16 }}>正在加载登录状态…</div>
               ) : user ? (
                 <BudgetPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              loading ? (
+                <div style={{ padding: 16 }}>正在加载登录状态…</div>
+              ) : user ? (
+                <SettingsPage />
               ) : (
                 <Navigate to="/" replace />
               )
