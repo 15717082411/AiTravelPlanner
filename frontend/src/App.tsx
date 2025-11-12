@@ -7,7 +7,6 @@ import SettingsPage from './pages/SettingsPage';
 import PlansPage from './pages/PlansPage';
 import PlanDetailPage from './pages/PlanDetailPage';
 import { useAuth } from './context/auth';
-import MapView from './components/MapView';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -59,7 +58,6 @@ export default function App() {
           <nav className="nav">
             {user ? (
               <>
-                <Link className="nav-link" to="/map">地图</Link>
                 <Link className="nav-link" to="/planner">规划</Link>
                 <Link className="nav-link" to="/plans">行程</Link>
                 <Link className="nav-link" to="/budget">预算</Link>
@@ -78,18 +76,6 @@ export default function App() {
       <main className="container" style={{ paddingBottom: 32 }}>
         <Routes>
           <Route path="/" element={<AuthPage />} />
-          <Route
-            path="/map"
-            element={
-              loading ? (
-                <div style={{ padding: 16 }}>正在加载登录状态…</div>
-              ) : user ? (
-                <MapView />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
           <Route
             path="/planner"
             element={

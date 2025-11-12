@@ -30,5 +30,21 @@
 - 前端：React、React Router、@supabase/supabase-js
 - 后端：Express、Zod
 
+## Docker 部署
+
+项目支持通过 Docker 容器化部署，并使用 GitHub Actions 自动构建和推送到阿里云镜像仓库。
+
+详细配置说明请参考：[Docker 部署指南](docs/docker-deployment.md)
+
+### 快速开始
+
+1. 配置阿里云容器镜像服务（创建命名空间和镜像仓库）
+2. 在 GitHub 仓库中配置 Secrets：
+   - `ALIYUN_REGISTRY_USERNAME`
+   - `ALIYUN_REGISTRY_PASSWORD`
+3. 修改 `.github/workflows/docker-build.yml` 中的 `REGISTRY` 和 `NAMESPACE`
+4. 推送代码到 `main` 分支即可自动构建和推送镜像
+   - 详细推送步骤请参考：[Git 推送指南](docs/git-push-guide.md)
+
 ## 注意
 - 预览需启动前端开发服务器；本环境若无 Node.js 将无法浏览 UI。

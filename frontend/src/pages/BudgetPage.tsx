@@ -171,10 +171,10 @@ export default function BudgetPage() {
 
   // 语音输入进行时，实时将识别文本写入“描述”输入框
   useEffect(() => {
-    if (listening) {
+    if (transcript) {
       setForm((f) => ({ ...f, description: transcript }));
     }
-  }, [listening, transcript]);
+  }, [transcript]);
 
   const add = () => {
     if (!form.description || form.amount == null) { setError('请填写描述与金额'); return; }
